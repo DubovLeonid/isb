@@ -1,0 +1,13 @@
+{
+    "ALPH": "абвгдеёжзийклмнопрстуфхцчшщъыьэюя",
+    "TEXT": "text.txt",
+    "ENCTEXT": "enctext.txt",
+    "KEY": "key.json",
+    "freq_ru": "freq_ru.json",
+    "real_frequency": "real_frequency.json",
+    "cod8_txt": "cod8.txt",
+    "encrypted_text": "encrypted.txt",
+    "key2": "key2.json"
+}
+
+
