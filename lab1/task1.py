@@ -2,28 +2,38 @@ from func import *
 
 def caesar(text: str, alph: str, key: int) -> str:
     """
-        Шифрует текст с помощью шифра Цезаря.
+    Шифрует текст с помощью шифра Цезаря.
 
-        :param text: Исходный текст для шифрования.
-        :param alph: Алфавит, используемый для шифрования.
-        :param key: Числовой сдвиг для шифра.
-        :return: Зашифрованная строка.
+    :param text: Исходный текст для шифрования.
+    :param alph: Алфавит (символы должны быть уникальными).
+    :param key: Числовой сдвиг для шифра.
+    :return: Зашифрованная строка или сообщение об ошибке.
     """
     try:
-        enctext = ""
+        alph_lower = alph.lower()
+        if len(set(alph_lower)) != len(alph):
+            raise ValueError("Алфавит содержит повторяющиеся символы")
+        
+        char_to_index = {char: idx for idx, char in enumerate(alph_lower)}
+        alpha_len = len(alph_lower)
+        encrypted_chars = []
+
         for char in text:
-            match char:
-                case c if c in alph:
-                    new_index = (alph.index(c) + key) % len(alph)
-                    enctext += alph[new_index]
-                case c if c.lower() in alph:
-                    new_index = (alph.index(c.lower()) + key) % len(alph)
-                    enctext += alph[new_index].upper()
-                case _:
-                    enctext += char
-        return enctext
+            lower_char = char.lower()
+            if lower_char in char_to_index:
+                original_idx = char_to_index[lower_char]
+                new_idx = (original_idx + key) % alpha_len
+                new_char = alph_lower[new_idx]
+                encrypted_chars.append(new_char.upper() if char.isupper() else new_char)
+            else:
+                encrypted_chars.append(char)
+
+        return ''.join(encrypted_chars)
+
+    except ValueError as ve:
+        return f"Ошибка валидации: {ve}"
     except Exception as e:
-        return f"Ошибка: {e}"
+        return f"Неизвестная ошибка: {e}"
 
 def decrypt_caesar(text: str, alph: str, key: int) -> str:
     """
