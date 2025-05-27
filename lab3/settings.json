@@ -1,0 +1,9 @@
+{
+    "secret_file": "secret.txt",
+    "original_file": "secret_message.txt",
+    "encrypted_file": "encrypted.bin",
+    "decrypted_file": "decrypted_message.txt",
+    "symmetric_key": "sym_key.bin",
+    "public_key": "public_key.pem",
+    "private_key": "private_key.pem"
+}
