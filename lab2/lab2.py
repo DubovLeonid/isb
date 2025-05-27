@@ -1,6 +1,8 @@
 import math
 from scipy.special import erfc, gammainc
-def frequency_test(bits):
+from saveopenload import load_json, read
+
+def frequency_test(bits:str)->float:
     """
         Частотный побитовый тест
         Проверяет, является ли количество единиц и нулей в последовательности примерно одинаковым.
@@ -13,7 +15,8 @@ def frequency_test(bits):
     p_value = math.erfc(abs(s) / math.sqrt(2))
     return p_value
 
-def runs_test(bits):
+
+def runs_test(bits:str)->float:
     """
     Выполняет тест на одинаковые подряд идущие биты
     :param bits: Бинарная строка для тестирования
@@ -31,17 +34,18 @@ def runs_test(bits):
     return erfc(numerator / denominator)
 
 
-def longest_run_test(bits):
+def longest_run_test(bits:str)->float:
     """
         Тест на самую длинную последовательность единиц в блоке
         Анализирует распределение максимальных длин последовательностей единиц.
-        :param bits: Битовая строка для анализа
-        :return: P-значение теста
+        :param bits: Битовая строка длиной 128 символов (16 блоков × 8 бит)
+        :return: P-значение теста. Значение >= 0.01 указывает на успешное прохождение теста.
         """
 
     blocks = [bits[i*8:(i+1)*8] for i in range(16)]
     v = [0, 0, 0, 0]
-    pi = [0.2148, 0.3672, 0.2305, 0.1875]
+    nastrk = load_json("nastrli.json")
+    pi = [float(x) for x in nastrk["pi"]]
 
     for block in blocks:
         max_run = 0
@@ -49,70 +53,81 @@ def longest_run_test(bits):
         for bit in block:
             current_run = current_run + 1 if bit == '1' else 0
             max_run = max(max_run, current_run)
-        if max_run <= 1: v[0] += 1
-        elif max_run == 2: v[1] += 1
-        elif max_run == 3: v[2] += 1
-        else: v[3] += 1
+        match max_run:
+            case 0 | 1:
+                v[0] += 1
+            case 2:
+                v[1] += 1
+            case 3:
+                v[2] += 1
+            case _:  # Все остальные случаи (max_run > 3)
+                v[3] += 1
 
     chi_sq = sum((v[i] - 16 * pi[i])**2 / (16 * pi[i]) for i in range(4))
     return gammainc(1.5, chi_sq / 2)
 
 
-def read_bits(filename):
+def read_bits(filename:str)->str | None:
     """
-    Считывает последовательность и проверяет на количество бит
-    :param filename: название файла с последовательностью
-    :return:
-    """
+        Считывает последовательность битов из файла и проверяет её валидность.
+        Проверяет:
+        1. Ровно 128 бит в последовательности
+        2. Только символы '0' и '1' в содержимом
+        :param filename: Название файла с последовательностью битов
+        :return: Валидная битовая строка или None при ошибке
+        """
     try:
-        with open(filename, 'r') as f:
-            bits = f.read().strip()
-            if len(bits) != 128:
-                raise ValueError(f"Файл {filename} содержит {len(bits)} бит вместо 128")
-            if not set(bits) <= {'0', '1'}:
-                raise ValueError(f"Файл {filename} содержит недопустимые символы")
-            return bits
-    except FileNotFoundError:
-        print(f"Ошибка: файл {filename} не найден!")
-        return None
-    except Exception as e:
-        print(f"Ошибка при чтении {filename}: {str(e)}")
+        bits=read(filename)
+        if len(bits) != 128:
+            raise ValueError(f"Файл {filename} содержит {len(bits)} бит вместо 128")
+        if not set(bits) <= {'0', '1'}:
+            raise ValueError(f"Файл {filename} содержит недопустимые символы")
+        return bits
+    except ValueError as ve:
+        print(f"Ошибка данных: {ve}")
         return None
 
 
-def test_sequence(bits, name):
+def test_sequence(bits: str, name: str) -> None:
     """
         Выполняет серию статистических тестов NIST для анализа случайности битовой последовательности.
         :param bits (str): Битовая последовательность для тестирования (должна содержать только '0' и '1')
         :param name (str): Название/идентификатор последовательности для вывода в отчет
     """
-
     try:
         print(f"\n{'=' * 40}")
-        print(f"Тестирование последовательности: {name}")
+        print(f"Тестирование последовательности: {name}\n")
 
-        p1 = frequency_test(bits)
-        print(f"\n[1] Частотный тест: p-value = {p1:.6f}")
+        # Список тестов и их результатов (название, p-value, пройден ли)
+        tests = [
+            ("Частотный тест", frequency_test(bits)),
+            ("Тест на серии", runs_test(bits)),
+            ("Тест на длинные последовательности", longest_run_test(bits))
+        ]
 
-        p2 = runs_test(bits)
-        print(f"[2] Тест на серии: p-value = {p2:.6f}")
+        # Проверка и вывод результатов для каждого теста
+        passed_all = True
+        for idx, (test_name, p_value) in enumerate(tests, 1):
+            passed = p_value >= 0.01 if p_value is not None else False
+            passed_all &= passed
 
-        p3 = longest_run_test(bits)
-        print(f"[3] Тест на длинные последовательности: p-value = {p3:.6f}")
+            status = "ПРОЙДЕН" if passed else "НЕ ПРОЙДЕН"
+            print(f"[{idx}] {test_name}:")
+            print(f"  p-value = {p_value:.6f}")
+            print(f"  Статус: {status}\n")
 
+        # Итоговый результат
         print("\nИтоговые результаты:")
-        print(f"Все тесты пройдены: {all(p >= 0.01 for p in [p1, p2, p3])}")
+        result_status = "Все тесты пройдены успешно " if passed_all else "Есть непройденные тесты "
+        print(result_status)
 
     except Exception as e:
         print(f"\nОшибка при тестировании: {str(e)}")
 
 
 def main():
-    files = [
-        ("cpp_random_bits.txt", "C++ ГПСЧ"),
-        ("java_random_bits.txt", "Java SecureRandom")
-    ]
-
+    config=load_json("nastrli.json")
+    files = [(item["filename"], item["name"]) for item in config["files"]]
     for filename, name in files:
         bits = read_bits(filename)
         if bits:
