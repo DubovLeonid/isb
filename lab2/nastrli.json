@@ -2,7 +2,6 @@
   "cpp_gnrt": "cpp_random_bits.txt",
   "java_gnrt": "java_random_bits.txt",
   "path_r": "res.txt",
-  "pi": ["0.2148", "0.3672", "0.2305", "0.1875"],
   "files": [
         {
             "filename": "cpp_random_bits.txt",
