@@ -1,14 +1,15 @@
 import math
 from scipy.special import erfc, gammainc
 from saveopenload import load_json, read
+from con import pi
 
 def frequency_test(bits:str)->float:
     """
-        Частотный побитовый тест
-        Проверяет, является ли количество единиц и нулей в последовательности примерно одинаковым.
-        :param bits: Битовая строка для анализа
-        :return: P-значение теста
-        """
+    Частотный побитовый тест (Frequency Test).
+    Проверяет, насколько количество 1 и 0 близко к равному.
+    :param bits: строка из '0' и '1'
+    :return: p-value
+    """
 
     n = len(bits)
     s = sum(1 if bit == '1' else -1 for bit in bits) / math.sqrt(n)
@@ -34,37 +35,44 @@ def runs_test(bits:str)->float:
     return erfc(numerator / denominator)
 
 
-def longest_run_test(bits:str)->float:
+from scipy.special import gammaincc
+
+
+def longest_run_test(bits: str) -> float:
     """
-        Тест на самую длинную последовательность единиц в блоке
-        Анализирует распределение максимальных длин последовательностей единиц.
-        :param bits: Битовая строка длиной 128 символов (16 блоков × 8 бит)
-        :return: P-значение теста. Значение >= 0.01 указывает на успешное прохождение теста.
-        """
+    Тест на самую длинную последовательность единиц в блоке.
+    Анализирует распределение максимальных длин последовательностей единиц.
+    :param bits: Битовая строка длиной не менее 128 символов (кратно 8).
+    :return: P-значение теста. Значение >= 0.01 указывает на успешное прохождение теста.
+    """
 
-    blocks = [bits[i*8:(i+1)*8] for i in range(16)]
-    v = [0, 0, 0, 0]
-    nastrk = load_json("nastrli.json")
-    pi = [float(x) for x in nastrk["pi"]]
+    if len(bits) < 128:
+        raise ValueError("Minimum 128 bits required")
 
-    for block in blocks:
+    num_blocks = len(bits) // 8
+    val = [0, 0, 0, 0]
+
+    for i in range(num_blocks):
+        block = bits[i * 8:(i + 1) * 8]
         max_run = 0
         current_run = 0
         for bit in block:
             current_run = current_run + 1 if bit == '1' else 0
             max_run = max(max_run, current_run)
+
         match max_run:
             case 0 | 1:
-                v[0] += 1
+                val[0] += 1
             case 2:
-                v[1] += 1
+                val[1] += 1
             case 3:
-                v[2] += 1
-            case _:  # Все остальные случаи (max_run > 3)
-                v[3] += 1
+                val[2] += 1
+            case _:
+                val[3] += 1
 
-    chi_sq = sum((v[i] - 16 * pi[i])**2 / (16 * pi[i]) for i in range(4))
-    return gammainc(1.5, chi_sq / 2)
+    chi_sq = sum((v - 16 * p) ** 2 / (16 * p) for v, p in zip(val, pi))
+    p_value = gammaincc(1.5, chi_sq / 2)
+    return p_value
 
 
 def read_bits(filename:str)->str | None:
