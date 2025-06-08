@@ -1,7 +1,7 @@
 import math
 from scipy.special import erfc, gammainc
 from saveopenload import load_json, read
-from con import pi
+
 
 def frequency_test(bits:str)->float:
     """
@@ -48,7 +48,8 @@ def longest_run_test(bits: str) -> float:
 
     if len(bits) < 128:
         raise ValueError("Minimum 128 bits required")
-
+    config = load_json("nastrli.json")
+    pi = config['pi_values']
     num_blocks = len(bits) // 8
     val = [0, 0, 0, 0]
 
