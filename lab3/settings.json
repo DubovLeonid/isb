@@ -1,6 +1,6 @@
 {
-    "secret_file": "secret.txt",
-    "original_file": "secret_message.txt",
+    "secret_file": "encrypted_file.txt",
+    "original_file": "original_file.txt",
     "encrypted_file": "encrypted.bin",
     "decrypted_file": "decrypted_message.txt",
     "symmetric_key": "sym_key.bin",
