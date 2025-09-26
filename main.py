@@ -55,23 +55,25 @@ def main() -> int:
     )
 
     args = parser.parse_args()
-
     try:
         app = Application(args.config)
 
-        if args.command == "generate-keys":
-            app.generate_keys()
+        match args.command:
+            case "generate-keys":
+                app.generate_keys()
 
-        elif args.command == "encrypt":
-            input_file = args.input if args.input else app.config["original_file"]
-            output_file = args.output if args.output else app.config["secret_file"]
-            app.encrypt_file(input_file, output_file)
+            case "encrypt":
+                input_file = args.input if args.input else app.config["original_file"]
+                output_file = args.output if args.output else app.config["secret_file"]
+                app.encrypt_file(input_file, output_file)
 
-        elif args.command == "decrypt":
-            input_file = args.input if args.input else app.config["secret_file"]
-            output_file = args.output if args.output else app.config["decrypted_file"]
-            app.decrypt_file(input_file, output_file)
+            case "decrypt":
+                input_file = args.input if args.input else app.config["secret_file"]
+                output_file = args.output if args.output else app.config["decrypted_file"]
+                app.decrypt_file(input_file, output_file)
 
+            case _:
+                print(f"Unknown command: {args.command}")
     except KeyError as e:
         print(f"Ошибка конфигурации: отсутствует ключ {e}")
         return 1
@@ -84,4 +86,5 @@ def main() -> int:
 
 
 if __name__ == "__main__":
+
     exit(main())
